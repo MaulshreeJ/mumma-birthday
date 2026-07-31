@@ -42,8 +42,7 @@
     text-align:center;
     z-index:1;
   }
-  .reveal{opacity:0; transform:translateY(28px); transition:opacity 1s cubic-bezier(.22,1,.36,1), transform 1s cubic-bezier(.22,1,.36,1);}
-  .reveal.in{opacity:1; transform:translateY(0);}
+  .reveal{opacity:1; transform:none;}
   .eyebrow{
     font-family:'Inter',sans-serif;
     font-size:.72rem;
@@ -231,6 +230,7 @@
   .city-stop:nth-child(3) .city-dot{animation-delay:.4s;}
   .city-stop:nth-child(4) .city-dot{animation-delay:.6s;}
   .city-stop:nth-child(5) .city-dot{animation-delay:.8s;}
+  .city-stop:nth-child(6) .city-dot{animation-delay:1s;}
   .city-stop.me .city-dot{background:linear-gradient(135deg,var(--pink),var(--gold)); border-color:var(--gold); color:#fff;}
   @keyframes cityBob{0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);}}
   .city-label{font-family:'Playfair Display',serif; font-size:1.05rem; color:var(--ink); text-align:center;}
@@ -553,6 +553,10 @@
       <div class="city-label">Lucknow<span>where it all began</span></div>
     </div>
     <div class="city-stop">
+      <div class="city-dot">🌇</div>
+      <div class="city-label">Ghaziabad<span>the next chapter</span></div>
+    </div>
+    <div class="city-stop">
       <div class="city-dot">🌾</div>
       <div class="city-label">Bikaner<span>new city, same home</span></div>
     </div>
@@ -757,35 +761,9 @@ window.addEventListener('scroll', ()=>{
   progressBar.style.width = pct + '%';
 });
 
-/* ---------------- Reveal on scroll ---------------- */
+/* ---------------- Reveal (content is always visible; this is now a no-op kept for compatibility) ---------------- */
 const revealEls = document.querySelectorAll('.reveal');
-function checkReveal(){
-  const vh = window.innerHeight;
-  revealEls.forEach(el=>{
-    if(el.classList.contains('in')) return;
-    const r = el.getBoundingClientRect();
-    if(r.top < vh * 0.92 && r.bottom > 0){
-      el.classList.add('in');
-    }
-  });
-}
-if('IntersectionObserver' in window){
-  const io = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        e.target.classList.add('in');
-        io.unobserve(e.target);
-      }
-    });
-  }, {threshold:0, rootMargin:'0px 0px -8% 0px'});
-  revealEls.forEach(el=>io.observe(el));
-}
-window.addEventListener('scroll', checkReveal, {passive:true});
-window.addEventListener('resize', checkReveal);
-window.addEventListener('load', checkReveal);
-checkReveal();
-setTimeout(checkReveal, 500);
-setTimeout(()=>{ revealEls.forEach(el=>el.classList.add('in')); }, 4000);
+revealEls.forEach(el=>el.classList.add('in'));
 
 /* ---------------- Floating hearts & sparkles ---------------- */
 const floatCanvas = document.getElementById('floaties');
