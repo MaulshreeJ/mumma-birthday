@@ -320,27 +320,43 @@
   .meter-emoji{font-size:3rem; margin-bottom:10px; transition:transform .2s;}
   .meter-caption{font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1.3rem; color:var(--ink); min-height:36px;}
 
-  /* ---------- HEART RUSH (adrenaline game) ---------- */
-  #rushGame{background:linear-gradient(180deg,var(--beige) 0%, var(--beige2) 100%);}
-  .game-box{
-    position:relative;
-    width:min(92vw,480px);
-    height:400px;
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:24px;
-    overflow:hidden;
-    box-shadow:0 20px 50px rgba(207,154,82,.18);
+  /* ---------- MEMORY MATCH PUZZLE ---------- */
+  #puzzleGame{background:linear-gradient(180deg,var(--beige) 0%, var(--beige2) 100%);}
+  .puzzle-stats{
+    display:flex; gap:26px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:.9rem;
+    color:var(--pink-deep);
+    margin-bottom:20px;
   }
-  .game-box.shake{animation:shakeBox .3s;}
-  @keyframes shakeBox{0%,100%{transform:translateX(0);} 20%{transform:translateX(-10px);} 40%{transform:translateX(10px);} 60%{transform:translateX(-6px);} 80%{transform:translateX(6px);}}
-  .game-score{position:absolute; top:14px; left:18px; font-family:'Inter',sans-serif; font-weight:700; color:var(--pink-deep); z-index:5; font-size:.95rem;}
-  .game-timer{position:absolute; top:14px; right:18px; font-family:'Inter',sans-serif; font-weight:700; color:var(--gold); z-index:5; font-size:.95rem;}
-  .game-timer.low{color:#e5455c; animation:timerPulse .5s infinite;}
-  @keyframes timerPulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.2);}}
-  #rushStartBtn{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:6;}
-  .rush-countdown{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:4rem; color:var(--pink-deep); z-index:7; background:rgba(255,250,243,.9);}
-  .falling-heart{position:absolute; font-size:1.8rem; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;}
+  .puzzle-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(56px,74px));
+    gap:12px;
+    justify-content:center;
+  }
+  .puzzle-card{
+    width:100%;
+    aspect-ratio:1/1;
+    cursor:pointer;
+    perspective:800px;
+  }
+  .puzzle-card-inner{
+    position:relative; width:100%; height:100%;
+    transition:transform .5s cubic-bezier(.22,1,.36,1);
+    transform-style:preserve-3d;
+  }
+  .puzzle-card.flipped .puzzle-card-inner, .puzzle-card.matched .puzzle-card-inner{transform:rotateY(180deg);}
+  .puzzle-face{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:14px;
+    backface-visibility:hidden;
+    font-size:1.7rem;
+    box-shadow:0 10px 22px rgba(207,154,82,.16);
+  }
+  .puzzle-front{background:linear-gradient(135deg,var(--pink),var(--gold)); color:#fff; font-size:1.3rem;}
+  .puzzle-back{background:var(--card); border:1px solid var(--line); transform:rotateY(180deg);}
+  .puzzle-card.matched .puzzle-back{background:#fdeef1; border-color:var(--pink-deep);}
   .rush-result{margin-top:20px; font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1.25rem; color:var(--ink); min-height:30px;}
 
   /* ---------- SURPRISE CARD ---------- */
@@ -649,17 +665,18 @@
   <div class="photo-frame reveal rot-l"><img src="photo3.jpg" alt=""></div>
 </section>
 
-<!-- ================= HEART RUSH ================= -->
-<section id="rushGame">
-  <div class="eyebrow reveal">adrenaline round</div>
-  <h2 class="reveal" style="font-size:clamp(1.6rem,5vw,2.3rem); margin-bottom:10px;">Heart Rush</h2>
-  <p class="reveal" style="opacity:.75; max-width:440px; font-family:'Cormorant Garamond',serif; font-size:1.15rem; margin-bottom:20px; color:var(--ink-soft);">15 seconds on the clock. Tap the hearts, dodge the bombs 💣. It gets faster, fast.</p>
-  <div class="game-box reveal" id="rushBox">
-    <div class="game-score" id="rushScore">Score: 0</div>
-    <div class="game-timer" id="rushTimer">15.0s</div>
-    <button class="cute-btn" id="rushStartBtn" onclick="startRush()">Start</button>
+<!-- ================= MEMORY MATCH PUZZLE ================= -->
+<section id="puzzleGame">
+  <div class="eyebrow reveal">a lil puzzle</div>
+  <h2 class="reveal" style="font-size:clamp(1.6rem,5vw,2.3rem); margin-bottom:10px;">Match the Memories</h2>
+  <p class="reveal" style="opacity:.75; max-width:440px; font-family:'Cormorant Garamond',serif; font-size:1.15rem; margin-bottom:20px; color:var(--ink-soft);">Flip two cards at a time and find all the matching pairs.</p>
+  <div class="puzzle-stats reveal">
+    <span id="puzzleMoves">Moves: 0</span>
+    <span id="puzzleMatches">Matches: 0 / 8</span>
   </div>
-  <p class="rush-result" id="rushResult"></p>
+  <div class="puzzle-grid reveal" id="puzzleGrid"></div>
+  <button class="cute-btn reveal" id="puzzleResetBtn" onclick="initPuzzle()" style="margin-top:22px;">Restart Puzzle</button>
+  <p class="rush-result" id="puzzleResult"></p>
 </section>
 
 <!-- ================= PHOTO BREAK 4 ================= -->
@@ -996,115 +1013,80 @@ function updateMeter(){
 loveSlider.addEventListener('input', updateMeter);
 updateMeter();
 
-/* ---------------- Heart Rush: adrenaline mini game ---------------- */
-let rushScore = 0;
-let rushActive = false;
-let rushSpawnTimer = null;
-let rushCountdownTimer = null;
-let rushTimeLeft = 15;
+/* ---------------- Memory Match puzzle ---------------- */
+const puzzleEmojis = ['🎂','💗','🌸','🧸','💌','⚛️','🏡','🎀'];
+let puzzleFlipped = [];
+let puzzleMatchedCount = 0;
+let puzzleMoves = 0;
+let puzzleLock = false;
 
-function startRush(){
-  if(rushActive) return;
-  const box = document.getElementById('rushBox');
-  document.getElementById('rushStartBtn').style.display = 'none';
-  document.getElementById('rushResult').textContent = '';
-  box.querySelectorAll('.falling-heart').forEach(el=>el.remove());
-
-  const cd = document.createElement('div');
-  cd.className = 'rush-countdown';
-  cd.textContent = '3';
-  box.appendChild(cd);
-  let n = 3;
-  const cdTimer = setInterval(()=>{
-    n--;
-    if(n > 0){ cd.textContent = n; }
-    else if(n === 0){ cd.textContent = 'GO!'; }
-    else {
-      clearInterval(cdTimer);
-      cd.remove();
-      runRush(box);
-    }
-  }, 650);
-}
-
-function runRush(box){
-  rushActive = true;
-  rushScore = 0;
-  rushTimeLeft = 15;
-  document.getElementById('rushScore').textContent = 'Score: 0';
-  const timerEl = document.getElementById('rushTimer');
-  timerEl.textContent = '15.0s';
-  timerEl.classList.remove('low');
-
-  const glyphs = ['💗','💕','💖','💝'];
-  let spawnDelay = 850;
-
-  function spawnItem(){
-    if(!rushActive) return;
-    const isBomb = Math.random() < 0.22;
-    const el = document.createElement('div');
-    el.className = 'falling-heart';
-    el.textContent = isBomb ? '💣' : glyphs[Math.floor(Math.random()*glyphs.length)];
-    el.style.left = (Math.random()*82) + '%';
-    el.style.top = '-40px';
-    box.appendChild(el);
-    const duration = Math.max(1000, 2200 - (15 - rushTimeLeft) * 60);
-    const start = performance.now();
-    function fall(now){
-      const t = (now - start) / duration;
-      if(t >= 1 || !el.isConnected){ el.remove(); return; }
-      el.style.top = (t * 440 - 40) + 'px';
-      requestAnimationFrame(fall);
-    }
-    requestAnimationFrame(fall);
-    el.addEventListener('click', ()=>{
-      if(isBomb){
-        rushScore = Math.max(0, rushScore - 3);
-        box.classList.add('shake');
-        setTimeout(()=>box.classList.remove('shake'), 300);
-      } else {
-        rushScore++;
-      }
-      document.getElementById('rushScore').textContent = 'Score: ' + rushScore;
-      el.style.transition = 'transform .15s, opacity .15s';
-      el.style.transform = 'scale(1.7)';
-      el.style.opacity = '0';
-      setTimeout(()=>el.remove(), 150);
-    });
-    spawnDelay = Math.max(280, 850 - (15 - rushTimeLeft) * 38);
-    if(rushActive) rushSpawnTimer = setTimeout(spawnItem, spawnDelay);
+function shuffleArray(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  spawnItem();
+  return arr;
+}
 
-  rushCountdownTimer = setInterval(()=>{
-    rushTimeLeft -= 0.1;
-    if(rushTimeLeft <= 5) timerEl.classList.add('low');
-    if(rushTimeLeft <= 0){
-      endRush(box);
+function initPuzzle(){
+  const grid = document.getElementById('puzzleGrid');
+  grid.innerHTML = '';
+  puzzleFlipped = [];
+  puzzleMatchedCount = 0;
+  puzzleMoves = 0;
+  puzzleLock = false;
+  document.getElementById('puzzleMoves').textContent = 'Moves: 0';
+  document.getElementById('puzzleMatches').textContent = 'Matches: 0 / 8';
+  document.getElementById('puzzleResult').textContent = '';
+
+  const deck = shuffleArray([...puzzleEmojis, ...puzzleEmojis]);
+  deck.forEach((emoji, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'puzzle-card';
+    card.dataset.emoji = emoji;
+    card.dataset.index = idx;
+    card.innerHTML = '<div class="puzzle-card-inner">'
+      + '<div class="puzzle-face puzzle-front">?</div>'
+      + '<div class="puzzle-face puzzle-back">' + emoji + '</div>'
+      + '</div>';
+    card.addEventListener('click', ()=>flipPuzzleCard(card));
+    grid.appendChild(card);
+  });
+}
+
+function flipPuzzleCard(card){
+  if(puzzleLock) return;
+  if(card.classList.contains('flipped') || card.classList.contains('matched')) return;
+  if(puzzleFlipped.length >= 2) return;
+
+  card.classList.add('flipped');
+  puzzleFlipped.push(card);
+
+  if(puzzleFlipped.length === 2){
+    puzzleMoves++;
+    document.getElementById('puzzleMoves').textContent = 'Moves: ' + puzzleMoves;
+    const [c1, c2] = puzzleFlipped;
+    if(c1.dataset.emoji === c2.dataset.emoji){
+      c1.classList.add('matched');
+      c2.classList.add('matched');
+      puzzleFlipped = [];
+      puzzleMatchedCount++;
+      document.getElementById('puzzleMatches').textContent = 'Matches: ' + puzzleMatchedCount + ' / 8';
+      if(puzzleMatchedCount === puzzleEmojis.length){
+        document.getElementById('puzzleResult').textContent = 'You solved it in ' + puzzleMoves + ' moves! 💗';
+      }
     } else {
-      timerEl.textContent = rushTimeLeft.toFixed(1) + 's';
+      puzzleLock = true;
+      setTimeout(()=>{
+        c1.classList.remove('flipped');
+        c2.classList.remove('flipped');
+        puzzleFlipped = [];
+        puzzleLock = false;
+      }, 800);
     }
-  }, 100);
+  }
 }
-
-function endRush(box){
-  rushActive = false;
-  clearInterval(rushCountdownTimer);
-  clearTimeout(rushSpawnTimer);
-  document.getElementById('rushTimer').textContent = '0.0s';
-  setTimeout(()=>{
-    box.querySelectorAll('.falling-heart').forEach(el=>el.remove());
-    const btn = document.getElementById('rushStartBtn');
-    btn.textContent = 'Play again (scored ' + rushScore + ')';
-    btn.style.display = 'block';
-    let tier;
-    if(rushScore >= 20) tier = "okay, certified heart-catching legend. 🏆";
-    else if(rushScore >= 12) tier = "seriously impressive reflexes.";
-    else if(rushScore >= 6) tier = "not bad at all!";
-    else tier = "the bombs got you, try again 😅";
-    document.getElementById('rushResult').textContent = tier;
-  }, 500);
-}
+window.addEventListener('load', initPuzzle);
 
 /* ---------------- Surprise flip card ---------------- */
 const surprises = [
