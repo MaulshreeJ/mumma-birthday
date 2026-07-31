@@ -759,15 +759,33 @@ window.addEventListener('scroll', ()=>{
 
 /* ---------------- Reveal on scroll ---------------- */
 const revealEls = document.querySelectorAll('.reveal');
-const io = new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      e.target.classList.add('in');
-      io.unobserve(e.target);
+function checkReveal(){
+  const vh = window.innerHeight;
+  revealEls.forEach(el=>{
+    if(el.classList.contains('in')) return;
+    const r = el.getBoundingClientRect();
+    if(r.top < vh * 0.92 && r.bottom > 0){
+      el.classList.add('in');
     }
   });
-}, {threshold:.15});
-revealEls.forEach(el=>io.observe(el));
+}
+if('IntersectionObserver' in window){
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, {threshold:0, rootMargin:'0px 0px -8% 0px'});
+  revealEls.forEach(el=>io.observe(el));
+}
+window.addEventListener('scroll', checkReveal, {passive:true});
+window.addEventListener('resize', checkReveal);
+window.addEventListener('load', checkReveal);
+checkReveal();
+setTimeout(checkReveal, 500);
+setTimeout(()=>{ revealEls.forEach(el=>el.classList.add('in')); }, 4000);
 
 /* ---------------- Floating hearts & sparkles ---------------- */
 const floatCanvas = document.getElementById('floaties');
